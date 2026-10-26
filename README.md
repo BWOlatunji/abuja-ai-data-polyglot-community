@@ -99,6 +99,8 @@ Directory visibility, spotlight-publication consent, and communications consent 
 
 **Current auth assumption:** the only Supabase Auth users in this system are admins. There is no public member self-service login. If you add one later, re-audit every `authenticated`-role grant/policy in `0002_rls_and_grants.sql` — several of them currently assume "authenticated = admin."
 
+**Column grants vs. PostgREST embeds:** `src/lib/data/*.ts` deliberately avoids PostgREST relationship-embed syntax (e.g. `.select("*, member_skills(skills(name))")`) against `members`. Verified against a live project: embedding fails with `permission denied for table members` for the `anon` role even when every requested column is on the allow-list — PostgREST's embed resolution needs broader row access than a column-level `GRANT` provides. Each data-access function instead runs a plain explicit-column query plus a second query for the related rows, joined in memory. Keep this pattern for any new query that needs to join through `members`.
+
 ## First administrator
 
 There is intentionally **no** public "sign up as admin" page or API route. Create the first admin with the bootstrap script, run locally against your Supabase project:
@@ -128,7 +130,7 @@ npm test          # vitest, single run
 
 `npm run build` also runs `astro check`, which full-project type-checks every `.astro`/`.ts` file, including all page frontmatter.
 
-What's **not** covered by automated tests (and was instead verified manually with `curl` against a running dev server during this build): the admin login/authorization redirect behavior, and all four public form endpoints responding correctly with no Supabase configured. Once a real Supabase project exists, add integration tests that exercise the full join → admin-approve → public-directory flow against a disposable Supabase project or the local Supabase CLI stack.
+What's **not** covered by automated tests: the admin login/authorization redirect behavior and the live Supabase-backed data flows were instead verified manually (`curl` against a running dev server, both with Supabase unconfigured and against the live `abuja-ai-data-polyglot` project) — login → session → `/admin` dashboard, and the member directory/detail pages against real seeded data. Worth adding as proper integration tests later: exercise the full join → admin-approve → public-directory flow against a disposable Supabase project or the local Supabase CLI stack in CI.
 
 ## Deploying to Netlify
 
@@ -162,7 +164,7 @@ What's **not** covered by automated tests (and was instead verified manually wit
 - **Project contributor credits**: adding a member as a credited contributor on a project (`project_contributors`) is done directly in Supabase Studio for this first version rather than from the admin UI — flagged in `/admin/projects`. Low effort to add a proper picker later.
 - **No generated Supabase types yet** — the three Supabase client files are typed `any` for table rows (see `supabase-admin.ts` comment). Run `supabase gen types typescript` and wire in a `Database` type for full type safety on queries.
 - **Privacy policy wording** (`/privacy`) is a structured draft, not legal advice — it's explicitly flagged on the page and needs review by someone qualified on Nigerian data-protection law (NDPA 2023) before being relied on, especially retention periods and any cross-border hosting disclosure.
-- **No automated end-to-end test of the Supabase-backed flows** (see "Testing" above) — only unit tests plus manual `curl`/browser verification during development, since no live Supabase project was available during this build.
+- **No automated end-to-end test of the Supabase-backed flows** (see "Testing" above) — only unit tests plus manual `curl`/browser verification against the live project during development.
 
 ## Implementation notes by phase
 
@@ -170,10 +172,10 @@ What's **not** covered by automated tests (and was instead verified manually wit
 
 **Phase 2 — Public site.** All pages under `src/pages/*.astro` (excluding `admin/`), `src/components/*`, `src/layouts/BaseLayout.astro`. Every list/detail page has a working empty state, and falls back to explicitly-labelled sample data (`src/lib/sample-data.ts`) when Supabase isn't configured, rather than a blank screen.
 
-**Phase 3 — Supabase integration, registration, directory, search/filter.** `src/lib/data/*.ts`, `src/lib/supabase-public.ts`, `src/pages/api/join.ts`, `src/pages/members/*`. Verified manually: directory filters (skill/group/level/search) against both sample and the query shape used for real data; join form validation end-to-end via `curl` with Supabase unconfigured (fails gracefully) — full Supabase-backed path not yet exercised against a live project.
+**Phase 3 — Supabase integration, registration, directory, search/filter.** `src/lib/data/*.ts`, `src/lib/supabase-public.ts`, `src/pages/api/join.ts`, `src/pages/members/*`. Verified against the live `abuja-ai-data-polyglot` project: migrations applied cleanly (14 tables, RLS on all of them), seeded data renders correctly end-to-end on `/`, `/members`, and `/members/[slug]`. This surfaced a real bug — PostgREST relationship-embed queries against `members` failed with `permission denied` for `anon` despite column grants covering every requested field — fixed by switching `members.ts`/`spotlights.ts`/`projects.ts` to explicit-column queries plus an in-memory join (see "Security model" above). Join form validation was also verified end-to-end via `curl` with Supabase unconfigured (fails gracefully).
 
 **Phase 4 — Admin, spotlights, blog, events, projects.** `src/middleware.ts`, `src/layouts/AdminLayout.astro`, `src/pages/admin/*`, `src/pages/api/admin/**`. Admin content management uses simple list + inline create/edit forms per type rather than a general-purpose CMS, per the brief's "simplest reliable approach" guidance.
 
 **Phase 5 — Security, validation, tests, SEO.** RLS/grants as above; `src/lib/validation.ts` (zod, shared client+server); `src/lib/rate-limit.ts` + `src/lib/turnstile.ts`; `tests/*`; `src/components/Seo.astro`, `src/pages/sitemap.xml.ts`, `src/pages/robots.txt.ts`. Tests: 23 passing (`npm test`); `astro check` passes with 0 errors across 78 files; full `astro build` succeeds; manually smoke-tested all 15 public/admin routes plus all 4 form endpoints against a running dev server with no Supabase configured, which caught and fixed two real bugs (an `/admin` 500 instead of a redirect, and `null`-vs-`undefined` form-field handling breaking the join schema) before this was called done.
 
-**Phase 6 — Deployment & docs.** `netlify.toml`, `.env.example`, `scripts/create-first-admin.mjs`, this README. Remaining limitation: no live Netlify/Supabase deployment was performed as part of this build (no hosted project credentials available) — the steps above are written from the adapter's documented behavior and should be smoke-tested on first real deploy.
+**Phase 6 — Deployment & docs.** `netlify.toml`, `.env.example`, `scripts/create-first-admin.mjs`, this README. Supabase side is live: project `abuja-ai-data-polyglot` (West Europe/London) created, both migrations applied, first admin bootstrapped and verified via a full login → session → dashboard round-trip. Source is pushed to GitHub at `BWOlatunji/abuja-ai-data-polyglot-community`. Remaining limitation: no live Netlify deployment has been performed yet — the Netlify steps above are written from the adapter's documented behavior and should be smoke-tested on first real deploy.
