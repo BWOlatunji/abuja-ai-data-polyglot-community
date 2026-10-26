@@ -1,0 +1,23 @@
+---
+import { formatDate } from "../lib/utils";
+
+interface Props {
+  article: {
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    category: string;
+    published_at: string;
+    cover_image_url?: string | null;
+  };
+}
+const { article } = Astro.props;
+---
+
+<a href={`/blog/${article.slug}`} class="card flex flex-col gap-2 focus-visible:outline-none">
+  {article.cover_image_url && <img src={article.cover_image_url} alt="" class="mb-2 h-40 w-full rounded-lg object-cover" loading="lazy" />}
+  <span class="badge w-fit capitalize">{article.category.replace("-", " ")}</span>
+  <p class="font-semibold text-neutral-900 dark:text-neutral-100">{article.title}</p>
+  {article.excerpt && <p class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-3">{article.excerpt}</p>}
+  <p class="mt-1 text-xs text-neutral-500">{formatDate(article.published_at)}</p>
+</a>

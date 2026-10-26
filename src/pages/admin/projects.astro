@@ -1,0 +1,109 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { formatDate } from "../../lib/utils";
+
+const supabase = Astro.locals.supabase;
+const editId = Astro.url.searchParams.get("edit");
+
+const { data: projects, error } = await supabase
+  .from("projects")
+  .select("id, title, slug, summary, description, problem_statement, technologies, repository_url, demo_url, category, publication_status, created_at")
+  .order("created_at", { ascending: false });
+
+const editing = editId ? projects?.find((p) => p.id === editId) ?? null : null;
+const success = Astro.url.searchParams.get("success");
+const errorParam = Astro.url.searchParams.get("error");
+---
+
+<AdminLayout title="Projects">
+  {success && <p class="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Saved.</p>}
+  {errorParam && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">Could not save that project.</p>}
+  {error && <p class="mb-4 text-sm text-red-700">{error.message}</p>}
+
+  <div class="mb-10 rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+    <h2 class="mb-4 font-semibold">{editing ? "Edit project" : "New project"}</h2>
+    <form method="post" action="/api/admin/projects/upsert" class="grid gap-4 sm:grid-cols-2">
+      {editing && <input type="hidden" name="id" value={editing.id} />}
+      <div class="sm:col-span-2">
+        <label class="label-text" for="title">Title</label>
+        <input id="title" name="title" class="input-field" required value={editing?.title ?? ""} />
+      </div>
+      <div>
+        <label class="label-text" for="category">Category</label>
+        <input id="category" name="category" class="input-field" value={editing?.category ?? "general"} />
+      </div>
+      <div>
+        <label class="label-text" for="technologies">Technologies (comma separated)</label>
+        <input id="technologies" name="technologies" class="input-field" value={(editing?.technologies ?? []).join(", ")} />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label-text" for="summary">Summary</label>
+        <input id="summary" name="summary" class="input-field" value={editing?.summary ?? ""} />
+      </div>
+      <div>
+        <label class="label-text" for="repository_url">Repository URL</label>
+        <input id="repository_url" name="repository_url" class="input-field" value={editing?.repository_url ?? ""} />
+      </div>
+      <div>
+        <label class="label-text" for="demo_url">Demo URL</label>
+        <input id="demo_url" name="demo_url" class="input-field" value={editing?.demo_url ?? ""} />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label-text" for="problem_statement">Problem statement</label>
+        <textarea id="problem_statement" name="problem_statement" rows="3" class="input-field">{editing?.problem_statement ?? ""}</textarea>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label-text" for="description">Description</label>
+        <textarea id="description" name="description" rows="8" class="input-field" required>{editing?.description ?? ""}</textarea>
+      </div>
+      <div>
+        <label class="label-text" for="publication_status">Status</label>
+        <select id="publication_status" name="publication_status" class="input-field">
+          {["draft", "pending_review", "published", "archived"].map((s) => (
+            <option value={s} selected={s === (editing?.publication_status ?? "pending_review")}>{s}</option>
+          ))}
+        </select>
+      </div>
+      <div class="sm:col-span-2 flex gap-2">
+        <button type="submit" class="btn-primary">{editing ? "Save changes" : "Create project"}</button>
+        {editing && <a href="/admin/projects" class="btn-secondary">Cancel</a>}
+      </div>
+    </form>
+    <p class="mt-3 text-xs text-neutral-500">
+      Contributor credits (linking a project to member profiles) can be added directly in Supabase Studio on the
+      <code>project_contributors</code> table for this first version.
+    </p>
+  </div>
+
+  <div class="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
+    <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-800">
+      <thead class="bg-neutral-50 dark:bg-neutral-900">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold">Title</th>
+          <th class="px-4 py-3 text-left font-semibold">Status</th>
+          <th class="px-4 py-3 text-left font-semibold">Created</th>
+          <th class="px-4 py-3 text-left font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-neutral-100 dark:divide-neutral-800">
+        {
+          (projects ?? []).map((p) => (
+            <tr>
+              <td class="px-4 py-3">{p.title}</td>
+              <td class="px-4 py-3 capitalize">{p.publication_status.replace("_", " ")}</td>
+              <td class="px-4 py-3 text-neutral-500">{formatDate(p.created_at)}</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  <a href={`/admin/projects?edit=${p.id}`} class="btn-secondary px-2 py-1 text-xs">Edit</a>
+                  {p.publication_status === "published" && <a href={`/projects/${p.slug}`} class="btn-secondary px-2 py-1 text-xs">View</a>}
+                </div>
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  {(!projects || projects.length === 0) && <p class="mt-6 text-neutral-500">No projects yet.</p>}
+</AdminLayout>

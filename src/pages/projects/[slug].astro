@@ -1,0 +1,53 @@
+---
+export const prerender = false;
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ShareButtons from "../../components/ShareButtons.astro";
+import SampleDataNotice from "../../components/SampleDataNotice.astro";
+import { getProjectBySlug } from "../../lib/data/projects";
+import { formatDate } from "../../lib/utils";
+
+const { slug } = Astro.params;
+const { project, isSample } = await getProjectBySlug(slug!);
+
+if (!project) return Astro.redirect("/404");
+---
+
+<BaseLayout title={project.title} description={project.summary ?? project.title} type="article" publishedTime={project.published_at}>
+  <article class="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+    {isSample && <SampleDataNotice />}
+    <span class="badge capitalize">{project.category.replace("-", " ")}</span>
+    <h1 class="mt-3 font-display text-3xl font-bold text-neutral-900 sm:text-4xl dark:text-neutral-100">{project.title}</h1>
+    {project.summary && <p class="mt-3 text-lg text-neutral-600 dark:text-neutral-400">{project.summary}</p>}
+    <p class="mt-2 text-xs text-neutral-500">Published {formatDate(project.published_at)}</p>
+
+    <div class="prose prose-neutral mt-8 max-w-none dark:prose-invert">
+      <p class="whitespace-pre-line">{project.description}</p>
+    </div>
+
+    {project.technologies.length > 0 && (
+      <div class="mt-6 flex flex-wrap gap-2">
+        {project.technologies.map((tech) => <span class="badge">{tech}</span>)}
+      </div>
+    )}
+
+    {project.contributors.length > 0 && (
+      <div class="mt-8">
+        <h2 class="mb-2 font-semibold text-neutral-900 dark:text-neutral-100">Contributors</h2>
+        <ul class="space-y-1">
+          {project.contributors.map((c) => (
+            <li class="text-neutral-700 dark:text-neutral-300">{c.name}{c.role ? ` — ${c.role}` : ""}</li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    <div class="mt-8 flex flex-wrap gap-3">
+      {project.repository_url && <a href={project.repository_url} target="_blank" rel="noopener noreferrer" class="btn-secondary">Repository</a>}
+      {project.demo_url && <a href={project.demo_url} target="_blank" rel="noopener noreferrer" class="btn-primary">View demo</a>}
+    </div>
+
+    <div class="mt-10 border-t border-neutral-200 pt-6 dark:border-neutral-800">
+      <ShareButtons path={`/projects/${project.slug}`} title={project.title} />
+    </div>
+  </article>
+</BaseLayout>

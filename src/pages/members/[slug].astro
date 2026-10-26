@@ -1,0 +1,90 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ShareButtons from "../../components/ShareButtons.astro";
+import SampleDataNotice from "../../components/SampleDataNotice.astro";
+import { getPublicMemberBySlug } from "../../lib/data/members";
+import { initials, formatDate } from "../../lib/utils";
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const { member, isSample } = await getPublicMemberBySlug(slug!);
+
+if (!member) {
+  return Astro.redirect("/404");
+}
+---
+
+<BaseLayout
+  title={member.display_name}
+  description={member.professional_headline ?? `${member.display_name}'s profile on the Abuja AI and Data Polyglot Community.`}
+  type="profile"
+  image={member.profile_image_url ?? undefined}
+>
+  <div class="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+    {isSample && <SampleDataNotice />}
+
+    <div class="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
+      {member.profile_image_url ? (
+        <img src={member.profile_image_url} alt="" class="h-24 w-24 rounded-full object-cover" />
+      ) : (
+        <span class="flex h-24 w-24 items-center justify-center rounded-full bg-brand-100 text-3xl font-semibold text-brand-700 dark:bg-brand-900/50 dark:text-brand-200">
+          {initials(member.display_name)}
+        </span>
+      )}
+      <div>
+        <h1 class="font-display text-2xl font-bold text-neutral-900 sm:text-3xl dark:text-neutral-100">{member.display_name}</h1>
+        {member.professional_headline && <p class="mt-1 text-lg text-neutral-600 dark:text-neutral-400">{member.professional_headline}</p>}
+        {member.location && <p class="mt-1 text-sm text-neutral-500">{member.location}</p>}
+      </div>
+    </div>
+
+    {member.biography && (
+      <div class="mt-8">
+        <h2 class="mb-2 font-semibold text-neutral-900 dark:text-neutral-100">About</h2>
+        <p class="whitespace-pre-line text-neutral-700 dark:text-neutral-300">{member.biography}</p>
+      </div>
+    )}
+
+    {member.skills.length > 0 && (
+      <div class="mt-8">
+        <h2 class="mb-2 font-semibold text-neutral-900 dark:text-neutral-100">Skills &amp; technologies</h2>
+        <div class="flex flex-wrap gap-2">
+          {member.skills.map((skill) => <span class="badge">{skill}</span>)}
+        </div>
+      </div>
+    )}
+
+    {member.groups.length > 0 && (
+      <div class="mt-8">
+        <h2 class="mb-2 font-semibold text-neutral-900 dark:text-neutral-100">Learning groups</h2>
+        <div class="flex flex-wrap gap-2">
+          {member.groups.map((group) => <span class="badge">{group}</span>)}
+        </div>
+      </div>
+    )}
+
+    {(member.portfolio_url || member.linkedin_url || member.github_url) && (
+      <div class="mt-8">
+        <h2 class="mb-2 font-semibold text-neutral-900 dark:text-neutral-100">Links</h2>
+        <div class="flex flex-wrap gap-3">
+          {member.portfolio_url && (
+            <a href={member.portfolio_url} target="_blank" rel="noopener noreferrer" class="btn-secondary">Portfolio</a>
+          )}
+          {member.linkedin_url && (
+            <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer" class="btn-secondary">LinkedIn</a>
+          )}
+          {member.github_url && (
+            <a href={member.github_url} target="_blank" rel="noopener noreferrer" class="btn-secondary">GitHub</a>
+          )}
+        </div>
+      </div>
+    )}
+
+    <div class="mt-10 border-t border-neutral-200 pt-6 dark:border-neutral-800">
+      <ShareButtons path={`/members/${member.slug}`} title={`${member.display_name} on the Abuja AI and Data Polyglot Community`} />
+    </div>
+
+    <p class="mt-6 text-xs text-neutral-500">Member of the community since {formatDate(member.created_at)}.</p>
+  </div>
+</BaseLayout>

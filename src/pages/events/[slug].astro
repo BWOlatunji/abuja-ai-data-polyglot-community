@@ -1,0 +1,84 @@
+---
+export const prerender = false;
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ShareButtons from "../../components/ShareButtons.astro";
+import SampleDataNotice from "../../components/SampleDataNotice.astro";
+import { getEventBySlug } from "../../lib/data/events";
+import { formatEventDate, formatEventTime, isEventUpcoming } from "../../lib/utils";
+
+const { slug } = Astro.params;
+const { event, isSample } = await getEventBySlug(slug!);
+
+if (!event) return Astro.redirect("/404");
+
+const upcoming = isEventUpcoming(event.start_at);
+---
+
+<BaseLayout
+  title={event.title}
+  description={event.description}
+  type="article"
+  image={event.featured_image_url ?? undefined}
+>
+  <article class="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+    {isSample && <SampleDataNotice />}
+    <div class="flex items-center gap-2">
+      <span class="badge capitalize">{event.event_type.replace("_", " ")}</span>
+      <span class={`badge ${upcoming ? "bg-brand-600 text-white" : ""}`}>{upcoming ? "Upcoming" : "Completed"}</span>
+    </div>
+    <h1 class="mt-3 font-display text-3xl font-bold text-neutral-900 sm:text-4xl dark:text-neutral-100">{event.title}</h1>
+    <p class="mt-3 font-medium text-brand-700 dark:text-brand-300">
+      {formatEventDate(event.start_at, event.timezone)} · {formatEventTime(event.start_at, event.timezone)}
+      {event.end_at && <> – {formatEventTime(event.end_at, event.timezone)}</>}
+    </p>
+    <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400 capitalize">
+      {event.venue_type}{event.venue_details ? ` · ${event.venue_details}` : ""}
+    </p>
+
+    {event.featured_image_url && <img src={event.featured_image_url} alt="" class="mt-6 w-full rounded-xl object-cover" />}
+
+    <div class="prose prose-neutral mt-8 max-w-none dark:prose-invert">
+      <p class="whitespace-pre-line">{event.description}</p>
+    </div>
+
+    {event.speakers?.length > 0 && (
+      <div class="mt-8">
+        <h2 class="mb-3 font-semibold text-neutral-900 dark:text-neutral-100">Speakers</h2>
+        <div class="grid gap-4 sm:grid-cols-2">
+          {event.speakers.map((speaker) => (
+            <div class="card">
+              <p class="font-semibold">{speaker.name}</p>
+              {speaker.bio && <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{speaker.bio}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+
+    <div class="mt-8 flex flex-wrap gap-3">
+      {upcoming && event.registration_url && (
+        <a href={event.registration_url} target="_blank" rel="noopener noreferrer" class="btn-primary">Register</a>
+      )}
+      {!upcoming && event.recording_url && (
+        <a href={event.recording_url} target="_blank" rel="noopener noreferrer" class="btn-primary">Watch recording</a>
+      )}
+    </div>
+
+    {event.resources?.length > 0 && (
+      <div class="mt-8">
+        <h2 class="mb-3 font-semibold text-neutral-900 dark:text-neutral-100">Resources</h2>
+        <ul class="list-inside list-disc space-y-1">
+          {event.resources.map((r) => (
+            <li>
+              <a href={r.url} target="_blank" rel="noopener noreferrer" class="text-brand-700 hover:underline dark:text-brand-300">{r.label}</a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    <div class="mt-10 border-t border-neutral-200 pt-6 dark:border-neutral-800">
+      <ShareButtons path={`/events/${event.slug}`} title={event.title} />
+    </div>
+  </article>
+</BaseLayout>

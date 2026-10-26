@@ -1,0 +1,75 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Section from "../components/Section.astro";
+import { siteConfig } from "../lib/config";
+
+// Editable factual claims live here, separate from page markup, so an
+// organiser can update mission/values text without touching layout code.
+// For a future content-managed version, move this object into a
+// Supabase-backed "site_content" table editable from /admin.
+const aboutContent = {
+  mission:
+    "To give people in Abuja interested in data, AI, and programming languages a welcoming place to learn together, share knowledge, showcase their work, and grow their careers.",
+  vision:
+    "A thriving, visible community of data and AI practitioners in Abuja who support each other's learning and professional growth.",
+  values: [
+    { title: "Learning first", body: "We prioritise genuine skill-building over self-promotion or commercial pitching." },
+    { title: "Openness", body: "Beginners and experienced practitioners are equally welcome, regardless of background." },
+    { title: "Generosity", body: "Members share knowledge, mentor each other, and celebrate one another's wins." },
+    { title: "Integrity", body: "We protect member privacy and only publish what members explicitly consent to." },
+  ],
+  activities: [
+    "Webinars and workshops on tools like Python, R, SQL, Power BI, and machine learning.",
+    "Study circles and practice groups for members learning the same skills together.",
+    "Member spotlights celebrating jobs, certifications, talks, and projects.",
+    "A blog featuring tutorials, event recaps, and career guidance.",
+    "A projects showcase for member and community-built work.",
+  ],
+  participationModel:
+    "Membership is free and open to anyone interested in data, analytics, AI, ML, and related programming languages. New members register via the Join page; an organiser reviews each registration before activation. Public directory listing, spotlight features, and non-essential communications are always opt-in and reviewed separately from membership itself.",
+};
+---
+
+<BaseLayout title="About" description={`Learn about ${siteConfig.name}'s mission, values, and how to get involved.`}>
+  <Section title="About the community" description={aboutContent.mission}>
+    <div class="grid gap-8 lg:grid-cols-2">
+      <div class="card">
+        <h3 class="font-semibold text-neutral-900 dark:text-neutral-100">Our vision</h3>
+        <p class="mt-2 text-neutral-600 dark:text-neutral-400">{aboutContent.vision}</p>
+      </div>
+      <div class="card">
+        <h3 class="font-semibold text-neutral-900 dark:text-neutral-100">How participation works</h3>
+        <p class="mt-2 text-neutral-600 dark:text-neutral-400">{aboutContent.participationModel}</p>
+      </div>
+    </div>
+  </Section>
+
+  <Section title="Our values">
+    <div class="grid gap-5 sm:grid-cols-2">
+      {aboutContent.values.map((v) => (
+        <div class="card">
+          <p class="font-semibold text-neutral-900 dark:text-neutral-100">{v.title}</p>
+          <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{v.body}</p>
+        </div>
+      ))}
+    </div>
+  </Section>
+
+  <Section title="What we do">
+    <ul class="list-inside list-disc space-y-2 text-neutral-700 dark:text-neutral-300">
+      {aboutContent.activities.map((a) => <li>{a}</li>)}
+    </ul>
+  </Section>
+
+  <Section title="Organisers and partnerships">
+    <p class="text-neutral-600 dark:text-neutral-400">
+      This community is organised by volunteer community organisers. Details about current organisers, learning-group
+      leads, and any formal partnerships will be added here as they are confirmed — we do not list partnerships or
+      affiliations that have not been formally agreed.
+    </p>
+  </Section>
+
+  <section class="border-t border-neutral-200 bg-neutral-50 py-14 text-center dark:border-neutral-800 dark:bg-neutral-950">
+    <a href="/join" class="btn-primary">Join the Community</a>
+  </section>
+</BaseLayout>

@@ -1,0 +1,99 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Section from "../components/Section.astro";
+import { siteConfig, PRIVACY_POLICY_VERSION } from "../lib/config";
+---
+
+<BaseLayout title="Privacy Policy" description={`How ${siteConfig.name} collects, uses, and protects your information.`}>
+  <Section title="Privacy Policy">
+    <div class="prose prose-neutral max-w-none dark:prose-invert">
+      <p class="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 not-prose dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
+        <strong>Draft notice:</strong> this policy (version {PRIVACY_POLICY_VERSION}) describes the data practices implemented in this
+        website as built. It is written to align with general good-practice principles and the Nigeria Data Protection Act
+        (NDPA) 2023 framework, but it has <strong>not</strong> been reviewed by a qualified lawyer. Obtain legal review before
+        relying on this as your community's final privacy policy, especially the sections on legal basis, data
+        subject rights, and cross-border transfer (e.g. if Supabase infrastructure is hosted outside Nigeria).
+      </p>
+
+      <h2>1. Who we are</h2>
+      <p>
+        {siteConfig.name} ("we", "us", "the community") operates this website to organise community activities and
+        maintain a directory of members who choose to participate publicly. Contact: {siteConfig.contactEmail}.
+      </p>
+
+      <h2>2. What we collect</h2>
+      <ul>
+        <li><strong>Registration data:</strong> display name, email, optional full name, skills, interests, learning goals, experience level, career stage, location, and optional professional links, collected via the Join form.</li>
+        <li><strong>Public profile data:</strong> only the subset of registration data you explicitly opt into showing publicly, and only once an administrator approves publication.</li>
+        <li><strong>Achievement and spotlight data:</strong> details you or a nominator submit about an achievement, used only with your consent.</li>
+        <li><strong>Content submissions:</strong> project and content submissions you choose to share for editorial review.</li>
+        <li><strong>Contact messages:</strong> information you submit through the Contact form.</li>
+        <li><strong>Consent records:</strong> a history of what you agreed to and when, including withdrawals.</li>
+      </ul>
+
+      <h2>3. Why we process it</h2>
+      <ul>
+        <li>To review and manage your community membership.</li>
+        <li>To operate the public member directory and spotlight features, strictly according to your visibility choices.</li>
+        <li>To organise and communicate about events, learning groups, and relevant opportunities, where you have consented to non-essential communications.</li>
+        <li>To maintain the integrity and security of the website and prevent abuse.</li>
+      </ul>
+
+      <h2>4. Your visibility choices</h2>
+      <p>
+        Directory listing, spotlight publication, and non-essential communications are tracked as separate, optional
+        consents. Your email address, full legal name, and any administrator notes are never shown publicly, and are
+        never included in member directory responses or public API output, regardless of your visibility settings.
+      </p>
+
+      <h2>5. Who can see your information</h2>
+      <p>
+        Your private information (email, full name, admin notes) is visible only to authorised community
+        administrators via a protected admin area, enforced by database-level access rules — not merely by hiding
+        buttons in the website design. Public profile fields are visible to anyone visiting the website only after
+        both your consent and administrator approval.
+      </p>
+
+      <h2>6. Data retention</h2>
+      <p>
+        We retain membership and consent records for as long as you are an active or pending member, and for a
+        reasonable period afterwards to maintain accurate community records, unless you request deletion (see
+        Section 8). <em>[Flag for legal review: confirm a specific retention period appropriate to your
+        jurisdiction and recordkeeping needs.]</em>
+      </p>
+
+      <h2>7. Sharing with third parties</h2>
+      <p>
+        We do not sell member data. Data is processed using Supabase (database/authentication hosting) and Netlify
+        (website hosting). We do not post to LinkedIn or WhatsApp on your behalf automatically — see the Social
+        Sharing section below.
+      </p>
+
+      <h2>8. Your rights</h2>
+      <ul>
+        <li><strong>Correction:</strong> contact us to correct inaccurate information.</li>
+        <li><strong>Withdrawal of consent:</strong> you may withdraw directory, spotlight, or communications consent at any time; withdrawal unpublishes the relevant content going forward.</li>
+        <li><strong>Deletion:</strong> you may request deletion of your personal data, subject to reasonable recordkeeping needs and applicable legal requirements.</li>
+        <li><strong>Access:</strong> you may request a copy of the personal data we hold about you.</li>
+      </ul>
+      <p>To exercise any of these rights, contact <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a>.</p>
+
+      <h2>9. Security</h2>
+      <p>
+        We use database-level access controls (Row Level Security), restricted administrative access, and
+        environment-isolated credentials. No system is perfectly secure; we aim to minimise what is collected and
+        exposed publicly by default.
+      </p>
+
+      <h2>10. Changes to this policy</h2>
+      <p>This policy may be updated as the website evolves. The version identifier above changes whenever the substantive content changes.</p>
+
+      <h2>11. Social sharing</h2>
+      <p>
+        Published spotlights, articles, events, and projects include metadata that makes them look good when shared
+        on LinkedIn or WhatsApp, but publishing to those platforms is a manual action taken by a person — this
+        website does not automatically post on your behalf.
+      </p>
+    </div>
+  </Section>
+</BaseLayout>

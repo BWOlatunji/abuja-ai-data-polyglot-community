@@ -1,0 +1,46 @@
+---
+export const prerender = false;
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ShareButtons from "../../components/ShareButtons.astro";
+import SampleDataNotice from "../../components/SampleDataNotice.astro";
+import { getSpotlightBySlug } from "../../lib/data/spotlights";
+import { renderMarkdown } from "../../lib/markdown";
+import { formatDate } from "../../lib/utils";
+
+const { slug } = Astro.params;
+const { spotlight, isSample } = await getSpotlightBySlug(slug!);
+
+if (!spotlight) return Astro.redirect("/404");
+
+const contentHtml = renderMarkdown(spotlight.content);
+---
+
+<BaseLayout
+  title={spotlight.title}
+  description={spotlight.summary ?? spotlight.title}
+  type="article"
+  image={spotlight.image_url ?? undefined}
+  publishedTime={spotlight.published_at}
+>
+  <article class="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+    {isSample && <SampleDataNotice />}
+    <span class="badge capitalize">{spotlight.category.replace("_", " ")}</span>
+    <h1 class="mt-3 font-display text-3xl font-bold text-neutral-900 sm:text-4xl dark:text-neutral-100">{spotlight.title}</h1>
+    <p class="mt-3 text-sm text-neutral-500">
+      {spotlight.member && (
+        <>
+          Featuring <a href={`/members/${spotlight.member.slug}`} class="font-medium text-brand-700 hover:underline dark:text-brand-300">{spotlight.member.display_name}</a> ·{" "}
+        </>
+      )}
+      {formatDate(spotlight.published_at)}
+    </p>
+
+    {spotlight.image_url && <img src={spotlight.image_url} alt="" class="mt-6 w-full rounded-xl object-cover" />}
+
+    <div class="prose prose-neutral mt-8 max-w-none dark:prose-invert" set:html={contentHtml} />
+
+    <div class="mt-10 border-t border-neutral-200 pt-6 dark:border-neutral-800">
+      <ShareButtons path={`/spotlights/${spotlight.slug}`} title={spotlight.title} />
+    </div>
+  </article>
+</BaseLayout>

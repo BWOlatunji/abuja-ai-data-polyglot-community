@@ -1,0 +1,39 @@
+---
+import { siteConfig } from "../lib/config";
+import { buildShareLinks } from "../lib/utils";
+
+interface Props {
+  path: string;
+  title: string;
+}
+const { path, title } = Astro.props;
+const url = new URL(path, siteConfig.url).toString();
+const links = buildShareLinks(url, title);
+---
+
+<div class="flex flex-wrap items-center gap-2" data-share-url={url}>
+  <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">Share:</span>
+  <a href={links.linkedin} target="_blank" rel="noopener noreferrer" class="btn-secondary px-3 py-1.5 text-xs">LinkedIn</a>
+  <a href={links.whatsapp} target="_blank" rel="noopener noreferrer" class="btn-secondary px-3 py-1.5 text-xs">WhatsApp</a>
+  <button type="button" id="copy-link-btn" class="btn-secondary px-3 py-1.5 text-xs">Copy link</button>
+</div>
+
+<script>
+  const button = document.getElementById("copy-link-btn");
+  button?.addEventListener("click", async () => {
+    const container = button.closest("[data-share-url]") as HTMLElement | null;
+    const url = container?.dataset.shareUrl;
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      const original = button.textContent;
+      button.textContent = "Copied!";
+      setTimeout(() => {
+        button.textContent = original;
+      }, 2000);
+    } catch {
+      // Clipboard API unavailable (e.g. insecure context) - fail silently,
+      // the visible URL links still work.
+    }
+  });
+</script>

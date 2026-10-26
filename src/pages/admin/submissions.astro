@@ -1,0 +1,72 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { formatDate } from "../../lib/utils";
+
+const supabase = Astro.locals.supabase;
+const { data: submissions, error } = await supabase
+  .from("submissions")
+  .select("id, submission_type, payload, status, admin_notes, created_at")
+  .order("created_at", { ascending: false });
+
+const success = Astro.url.searchParams.get("success");
+const errorParam = Astro.url.searchParams.get("error");
+
+const typeLabels: Record<string, string> = {
+  registration: "Registration",
+  spotlight_nomination: "Spotlight nomination",
+  project_submission: "Project submission",
+  contact_message: "Contact message",
+};
+---
+
+<AdminLayout title="Submissions">
+  {success && <p class="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Updated.</p>}
+  {errorParam && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">Could not complete that action.</p>}
+  {error && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">Failed to load submissions: {error.message}</p>}
+
+  <div class="flex flex-col gap-4">
+    {
+      (submissions ?? []).map((submission: any) => (
+        <details class="rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+          <summary class="flex cursor-pointer flex-wrap items-center justify-between gap-2">
+            <span class="font-medium">
+              {typeLabels[submission.submission_type] ?? submission.submission_type} — {submission.payload?.title ?? submission.payload?.nomineeName ?? submission.payload?.displayName ?? submission.payload?.name ?? "Untitled"}
+            </span>
+            <span class="badge capitalize">{submission.status.replace("_", " ")}</span>
+            <span class="text-xs text-neutral-500">{formatDate(submission.created_at)}</span>
+          </summary>
+
+          <pre class="mt-3 max-h-64 overflow-auto rounded-md bg-neutral-50 p-3 text-xs dark:bg-neutral-950">{JSON.stringify(submission.payload, null, 2)}</pre>
+
+          <form method="post" action="/api/admin/submissions/update" class="mt-3 flex flex-wrap items-end gap-2">
+            <input type="hidden" name="id" value={submission.id} />
+            <div>
+              <label class="label-text" for={`status-${submission.id}`}>Status</label>
+              <select id={`status-${submission.id}`} name="status" class="input-field">
+                {["pending", "under_review", "approved", "rejected", "needs_info"].map((s) => (
+                  <option value={s} selected={s === submission.status}>
+                    {s.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div class="flex-1">
+              <label class="label-text" for={`notes-${submission.id}`}>Admin notes</label>
+              <input id={`notes-${submission.id}`} name="admin_notes" class="input-field" value={submission.admin_notes ?? ""} />
+            </div>
+            <button type="submit" class="btn-secondary">Save</button>
+          </form>
+
+          {(submission.submission_type === "spotlight_nomination" || submission.submission_type === "project_submission") && (
+            <form method="post" action="/api/admin/submissions/publish" class="mt-2">
+              <input type="hidden" name="id" value={submission.id} />
+              <button type="submit" class="btn-primary text-sm">Create draft from this submission</button>
+            </form>
+          )}
+        </details>
+      ))
+    }
+  </div>
+  {(!submissions || submissions.length === 0) && <p class="mt-6 text-neutral-500">No submissions yet.</p>}
+</AdminLayout>

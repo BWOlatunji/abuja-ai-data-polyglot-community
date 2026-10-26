@@ -1,0 +1,183 @@
+---
+export const prerender = false;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { listSkills, listActiveGroups } from "../lib/data/taxonomy";
+import { siteConfig } from "../lib/config";
+
+const skills = await listSkills();
+const groups = await listActiveGroups();
+
+const success = Astro.url.searchParams.get("success");
+const errorParam = Astro.url.searchParams.get("error");
+const message = Astro.url.searchParams.get("message");
+
+const errorMessages: Record<string, string> = {
+  validation: message ?? "Please check the form and try again.",
+  duplicate_email: "This email address is already registered with the community.",
+  rate_limited: "Too many submissions from this device recently. Please try again later.",
+  bot_check_failed: "We could not verify this submission. Please try again.",
+  server_error: "Something went wrong on our end. Please try again shortly.",
+  not_configured: "Registration is not available yet - the site's database connection has not been configured.",
+};
+---
+
+<BaseLayout title="Join the Community" description={`Join ${siteConfig.name} — tell us about yourself and your interests.`}>
+  <div class="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+    <h1 class="font-display text-3xl font-bold text-neutral-900 dark:text-neutral-100">Join the Community</h1>
+    <p class="mt-3 text-neutral-600 dark:text-neutral-400">
+      Tell us a bit about yourself. Membership is free. After you submit this form, an organiser will review your
+      registration — this is not automatic admission, and your directory/spotlight visibility choices below are
+      reviewed and approved separately.
+    </p>
+
+    {success && (
+      <div class="mt-6 rounded-xl border border-emerald-300 bg-emerald-50 p-5 text-emerald-900 dark:border-emerald-700 dark:bg-emerald-950 dark:text-emerald-100">
+        <p class="font-semibold">Thank you for registering!</p>
+        <p class="mt-1 text-sm">
+          Your registration is now pending review by a community organiser. You'll be contacted at the email you
+          provided. If you opted into the public directory, your profile will only appear once both your consent and
+          an administrator's approval are in place.
+        </p>
+      </div>
+    )}
+
+    {errorParam && !success && (
+      <p class="mt-6 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">
+        {errorMessages[errorParam] ?? "Something went wrong. Please try again."}
+      </p>
+    )}
+
+    {!success && (
+      <form method="post" action="/api/join" class="mt-8 grid gap-5" id="join-form">
+        <div class="hidden" aria-hidden="true">
+          <label for="website">Leave this field blank</label>
+          <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <div>
+          <label class="label-text" for="displayName">Name or preferred display name *</label>
+          <input id="displayName" name="displayName" required minlength="2" maxlength="80" class="input-field" />
+        </div>
+
+        <div>
+          <label class="label-text" for="email">Email address *</label>
+          <input id="email" name="email" type="email" required class="input-field" />
+          <p class="mt-1 text-xs text-neutral-500">Private. Used for membership communication and duplicate detection — never shown publicly.</p>
+        </div>
+
+        <div>
+          <label class="label-text" for="headline">Professional headline (optional)</label>
+          <input id="headline" name="headline" maxlength="160" class="input-field" placeholder="e.g. Data Analyst at ..." />
+        </div>
+
+        <fieldset>
+          <legend class="label-text">Skills and technologies</legend>
+          <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {skills.map((skill) => (
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="skills[]" value={skill.id} />
+                {skill.name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend class="label-text">Learning groups and interests</legend>
+          <div class="grid gap-2 sm:grid-cols-2">
+            {groups.map((group) => (
+              <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" name="groups[]" value={group.id} />
+                {group.name}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div>
+          <label class="label-text" for="learningGoals">Learning or career goals (optional)</label>
+          <textarea id="learningGoals" name="learningGoals" rows="3" maxlength="500" class="input-field"></textarea>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="label-text" for="experienceLevel">Experience level (optional)</label>
+            <select id="experienceLevel" name="experienceLevel" class="input-field">
+              <option value="">Prefer not to say</option>
+              {["student", "beginner", "intermediate", "advanced", "expert"].map((lvl) => <option value={lvl}>{lvl}</option>)}
+            </select>
+          </div>
+          <div>
+            <label class="label-text" for="careerStage">Career stage (optional)</label>
+            <select id="careerStage" name="careerStage" class="input-field">
+              <option value="">Prefer not to say</option>
+              {["student", "career_changer", "early_career", "mid_career", "senior", "freelance", "other"].map((s) => (
+                <option value={s}>{s.replace("_", " ")}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="label-text" for="location">City or general location (optional)</label>
+          <input id="location" name="location" maxlength="120" class="input-field" placeholder="e.g. Abuja, Nigeria" />
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label class="label-text" for="linkedinUrl">LinkedIn profile (optional)</label>
+            <input id="linkedinUrl" name="linkedinUrl" type="url" class="input-field" placeholder="https://linkedin.com/in/..." />
+          </div>
+          <div>
+            <label class="label-text" for="githubUrl">GitHub or portfolio (optional)</label>
+            <input id="githubUrl" name="githubUrl" type="url" class="input-field" placeholder="https://github.com/..." />
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
+          <p class="mb-3 text-sm font-semibold text-neutral-900 dark:text-neutral-100">Visibility &amp; communication preferences</p>
+          <div class="flex flex-col gap-3">
+            <label class="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="consentDirectoryListing" class="mt-1" />
+              <span>
+                <strong>Public directory listing:</strong> show an approved public profile (display name, headline,
+                bio, skills, and the links you choose) on the Members page. Requires separate administrator approval.
+              </span>
+            </label>
+            <label class="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="consentSpotlight" class="mt-1" />
+              <span><strong>Spotlight features:</strong> I may be considered for a Member Spotlight celebrating an achievement.</span>
+            </label>
+            <label class="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="consentCommunications" class="mt-1" />
+              <span><strong>Non-essential communications:</strong> occasional updates about events, resources, and opportunities.</span>
+            </label>
+          </div>
+        </div>
+
+        <label class="flex items-start gap-2 text-sm">
+          <input type="checkbox" name="consentPrivacyPolicy" required class="mt-1" />
+          <span>
+            I have read and understood the <a href="/privacy" class="text-brand-700 hover:underline dark:text-brand-300">Privacy Policy</a>, and
+            I consent to my information being processed as described, for the purpose of community membership. *
+          </span>
+        </label>
+
+        <button type="submit" id="join-submit" class="btn-primary">Submit registration</button>
+      </form>
+    )}
+  </div>
+</BaseLayout>
+
+<script>
+  // Prevent accidental duplicate submissions from a double-click or
+  // repeated Enter press while the request is in flight.
+  const form = document.getElementById("join-form") as HTMLFormElement | null;
+  const submitButton = document.getElementById("join-submit") as HTMLButtonElement | null;
+  form?.addEventListener("submit", () => {
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Submitting…";
+    }
+  });
+</script>

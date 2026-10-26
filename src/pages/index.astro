@@ -1,0 +1,178 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Section from "../components/Section.astro";
+import StatCard from "../components/StatCard.astro";
+import MemberCard from "../components/MemberCard.astro";
+import EventCard from "../components/EventCard.astro";
+import ArticleCard from "../components/ArticleCard.astro";
+import ProjectCard from "../components/ProjectCard.astro";
+import SampleDataNotice from "../components/SampleDataNotice.astro";
+import { siteConfig, isSupabaseConfigured } from "../lib/config";
+import { listPublicMembers, getMemberCount } from "../lib/data/members";
+import { listEvents } from "../lib/data/events";
+import { listPublishedArticles } from "../lib/data/articles";
+import { listPublishedProjects } from "../lib/data/projects";
+import { listActiveGroups } from "../lib/data/taxonomy";
+import { sampleStats } from "../lib/sample-data";
+
+const { members } = await listPublicMembers();
+const { upcoming, isSample: eventsSample } = await listEvents();
+const { articles, isSample: articlesSample } = await listPublishedArticles();
+const { projects, isSample: projectsSample } = await listPublishedProjects();
+const groups = await listActiveGroups();
+
+const memberCount = await getMemberCount();
+const usingSampleStats = memberCount === null;
+
+const stats = [
+  { label: "Community members", value: usingSampleStats ? `${sampleStats.members}*` : memberCount },
+  { label: "Events hosted", value: usingSampleStats ? `${sampleStats.events}*` : upcoming.length },
+  { label: "Community projects", value: usingSampleStats ? `${sampleStats.projects}*` : projects.length },
+  { label: "Articles published", value: usingSampleStats ? `${sampleStats.articles}*` : articles.length },
+];
+
+const spotlightMember = members[0];
+---
+
+<BaseLayout title={siteConfig.name} description={siteConfig.description}>
+  <!-- Hero -->
+  <section class="border-b border-neutral-200 bg-gradient-to-b from-brand-50 to-white dark:border-neutral-800 dark:from-brand-950/40 dark:to-neutral-950">
+    <div class="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-2 lg:items-center">
+      <div>
+        <p class="badge mb-4">Abuja · Data &amp; AI Community</p>
+        <h1 class="font-display text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl dark:text-neutral-100">
+          Learn, build, and grow together across data and AI.
+        </h1>
+        <p class="mt-5 max-w-xl text-lg text-neutral-700 dark:text-neutral-300">
+          {siteConfig.name} brings together data analysts, scientists, ML engineers, R and Python users, BI
+          practitioners, researchers, and curious beginners — to learn from each other, showcase work, and build
+          careers in Abuja and beyond.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="/join" class="btn-primary">Join the Community</a>
+          <a href="/members" class="btn-secondary">Explore Members</a>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        {stats.map((stat) => <StatCard value={stat.value} label={stat.label} />)}
+      </div>
+    </div>
+    {usingSampleStats && (
+      <p class="mx-auto max-w-6xl px-4 pb-6 text-xs text-neutral-500 sm:px-6">
+        * Sample statistics shown until Supabase is connected — see README. Not real community figures.
+      </p>
+    )}
+  </section>
+
+  {!isSupabaseConfigured && (
+    <div class="mx-auto max-w-6xl px-4 pt-8 sm:px-6">
+      <SampleDataNotice label="Sample data across this page" />
+    </div>
+  )}
+
+  <!-- Featured member spotlight -->
+  {spotlightMember && (
+    <Section title="Featured member" description="Say hello to a member of our community.">
+      <div class="max-w-md">
+        <MemberCard member={spotlightMember} />
+      </div>
+    </Section>
+  )}
+
+  <!-- Upcoming events -->
+  <Section title="Upcoming webinars and events" description="Join our next learning session or meetup.">
+    {eventsSample && <SampleDataNotice />}
+    {upcoming.length > 0 ? (
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {upcoming.slice(0, 3).map((event) => <EventCard event={event} />)}
+      </div>
+    ) : (
+      <p class="text-neutral-600 dark:text-neutral-400">No upcoming events scheduled right now — check back soon.</p>
+    )}
+    <a href="/events" class="mt-6 inline-block text-sm font-semibold text-brand-700 hover:underline dark:text-brand-300">
+      View all events →
+    </a>
+  </Section>
+
+  <!-- Latest articles -->
+  <Section title="Latest articles and tutorials" description="Learning resources written by and for the community.">
+    {articlesSample && <SampleDataNotice />}
+    {articles.length > 0 ? (
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {articles.slice(0, 3).map((article) => <ArticleCard article={article} />)}
+      </div>
+    ) : (
+      <p class="text-neutral-600 dark:text-neutral-400">No articles published yet.</p>
+    )}
+    <a href="/blog" class="mt-6 inline-block text-sm font-semibold text-brand-700 hover:underline dark:text-brand-300">
+      Visit the blog →
+    </a>
+  </Section>
+
+  <!-- Featured projects -->
+  <Section title="Featured projects" description="Community-built projects and contributions.">
+    {projectsSample && <SampleDataNotice />}
+    {projects.length > 0 ? (
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {projects.slice(0, 3).map((project) => <ProjectCard project={project} />)}
+      </div>
+    ) : (
+      <p class="text-neutral-600 dark:text-neutral-400">No projects published yet.</p>
+    )}
+    <a href="/projects" class="mt-6 inline-block text-sm font-semibold text-brand-700 hover:underline dark:text-brand-300">
+      View all projects →
+    </a>
+  </Section>
+
+  <!-- Learning groups -->
+  <Section title="Learning groups and technology interests" description="Find your people and your next learning track.">
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {groups.map((group) => (
+        <div class="card">
+          <p class="font-semibold text-neutral-900 dark:text-neutral-100">{group.name}</p>
+          {group.description && <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{group.description}</p>}
+        </div>
+      ))}
+    </div>
+  </Section>
+
+  <!-- Membership benefits -->
+  <Section title="Why join?" class="bg-brand-50/50 dark:bg-brand-950/20" description="What members get from being part of the community.">
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {[
+        { title: "Learn together", body: "Study circles, webinars, and practice groups across Python, R, SQL, Power BI, and ML." },
+        { title: "Get visible", body: "An opt-in public profile and spotlight features that celebrate your work and milestones." },
+        { title: "Build in public", body: "Showcase projects, get feedback, and find collaborators for your next build." },
+        { title: "Grow your network", body: "Connect with practitioners, mentors, employers, and fellow learners in Abuja and beyond." },
+        { title: "Share knowledge", body: "Write tutorials, give talks, and mentor others as you grow in your own journey." },
+        { title: "Stay informed", body: "Hear about relevant events, resources, and opportunities as they come up." },
+      ].map((benefit) => (
+        <div class="card">
+          <p class="font-semibold text-neutral-900 dark:text-neutral-100">{benefit.title}</p>
+          <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{benefit.body}</p>
+        </div>
+      ))}
+    </div>
+  </Section>
+
+  <!-- Community channels -->
+  <Section title="Stay connected" description="Join our conversation on the channels we use most.">
+    <div class="flex flex-wrap gap-3">
+      {siteConfig.whatsappUrl && (
+        <a href={siteConfig.whatsappUrl} target="_blank" rel="noopener noreferrer" class="btn-primary">Join WhatsApp group</a>
+      )}
+      {siteConfig.linkedinUrl && (
+        <a href={siteConfig.linkedinUrl} target="_blank" rel="noopener noreferrer" class="btn-secondary">Follow on LinkedIn</a>
+      )}
+    </div>
+  </Section>
+
+  <!-- Final CTA -->
+  <section class="border-t border-neutral-200 bg-brand-700 py-16 text-center dark:border-neutral-800">
+    <div class="mx-auto max-w-2xl px-4">
+      <h2 class="font-display text-2xl font-bold text-white sm:text-3xl">Ready to learn and build with us?</h2>
+      <p class="mt-3 text-brand-50">Membership is free to join. Tell us a bit about yourself and we'll take it from there.</p>
+      <a href="/join" class="btn-primary mt-6 inline-flex bg-white text-brand-700 hover:bg-brand-50">Join the Community</a>
+    </div>
+  </section>
+</BaseLayout>

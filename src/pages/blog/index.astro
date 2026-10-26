@@ -1,0 +1,46 @@
+---
+export const prerender = false;
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Section from "../../components/Section.astro";
+import ArticleCard from "../../components/ArticleCard.astro";
+import EmptyState from "../../components/EmptyState.astro";
+import SampleDataNotice from "../../components/SampleDataNotice.astro";
+import { listPublishedArticles } from "../../lib/data/articles";
+
+const search = Astro.url.searchParams.get("q") ?? "";
+const category = Astro.url.searchParams.get("category") ?? "";
+
+const { articles, isSample } = await listPublishedArticles({ search: search || undefined, category: category || undefined });
+
+const categories = ["tutorial", "announcement", "event-recap", "interview", "case-study", "career-guidance"];
+---
+
+<BaseLayout title="Blog" description="Tutorials, announcements, event recaps, member interviews, and career guidance from the community.">
+  <Section title="Blog" description="Tutorials, announcements, event recaps, interviews, and career guidance.">
+    {isSample && <SampleDataNotice />}
+
+    <form method="get" class="mb-8 flex flex-wrap items-end gap-3">
+      <div>
+        <label class="label-text" for="q">Search</label>
+        <input id="q" name="q" value={search} class="input-field" placeholder="Search articles" />
+      </div>
+      <div>
+        <label class="label-text" for="category">Category</label>
+        <select id="category" name="category" class="input-field">
+          <option value="">All categories</option>
+          {categories.map((c) => <option value={c} selected={c === category}>{c.replace("-", " ")}</option>)}
+        </select>
+      </div>
+      <button type="submit" class="btn-primary">Filter</button>
+      <a href="/blog" class="btn-secondary">Reset</a>
+    </form>
+
+    {articles.length > 0 ? (
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {articles.map((article) => <ArticleCard article={article} />)}
+      </div>
+    ) : (
+      <EmptyState title="No articles found" description="Try a different search term or check back later." />
+    )}
+  </Section>
+</BaseLayout>

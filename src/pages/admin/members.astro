@@ -1,0 +1,91 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { formatDate } from "../../lib/utils";
+
+const supabase = Astro.locals.supabase;
+const { data: members, error } = await supabase
+  .from("members")
+  .select(
+    "id, display_name, full_name, email, slug, membership_status, profile_visibility, public_profile_approved, created_at"
+  )
+  .order("created_at", { ascending: false });
+
+const statusOrder: Record<string, number> = { pending: 0, active: 1, suspended: 2, removed: 3 };
+const sorted = [...(members ?? [])].sort((a, b) => statusOrder[a.membership_status] - statusOrder[b.membership_status]);
+
+const success = Astro.url.searchParams.get("success");
+const errorParam = Astro.url.searchParams.get("error");
+---
+
+<AdminLayout title="Members">
+  {success && <p class="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Updated.</p>}
+  {errorParam && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">Could not complete that action.</p>}
+  {error && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">Failed to load members: {error.message}</p>}
+
+  <div class="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
+    <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-800">
+      <thead class="bg-neutral-50 dark:bg-neutral-900">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold">Name</th>
+          <th class="px-4 py-3 text-left font-semibold">Email</th>
+          <th class="px-4 py-3 text-left font-semibold">Membership</th>
+          <th class="px-4 py-3 text-left font-semibold">Public profile</th>
+          <th class="px-4 py-3 text-left font-semibold">Joined</th>
+          <th class="px-4 py-3 text-left font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-neutral-100 dark:divide-neutral-800">
+        {
+          sorted.map((member) => (
+            <tr>
+              <td class="px-4 py-3">
+                <p class="font-medium">{member.display_name}</p>
+                <p class="text-xs text-neutral-500">{member.full_name}</p>
+              </td>
+              <td class="px-4 py-3">{member.email}</td>
+              <td class="px-4 py-3 capitalize">{member.membership_status}</td>
+              <td class="px-4 py-3">
+                {member.profile_visibility === "public" ? (member.public_profile_approved ? "Approved" : "Opted in, pending approval") : "Private"}
+              </td>
+              <td class="px-4 py-3 text-neutral-500">{formatDate(member.created_at)}</td>
+              <td class="px-4 py-3">
+                <div class="flex flex-wrap gap-2">
+                  {member.membership_status === "pending" && (
+                    <form method="post" action="/api/admin/members/update">
+                      <input type="hidden" name="id" value={member.id} />
+                      <input type="hidden" name="action" value="approve_membership" />
+                      <button type="submit" class="btn-secondary px-2 py-1 text-xs">Approve membership</button>
+                    </form>
+                  )}
+                  {member.profile_visibility === "public" && !member.public_profile_approved && (
+                    <form method="post" action="/api/admin/members/update">
+                      <input type="hidden" name="id" value={member.id} />
+                      <input type="hidden" name="action" value="approve_profile" />
+                      <button type="submit" class="btn-secondary px-2 py-1 text-xs">Approve public profile</button>
+                    </form>
+                  )}
+                  {member.public_profile_approved && (
+                    <form method="post" action="/api/admin/members/update">
+                      <input type="hidden" name="id" value={member.id} />
+                      <input type="hidden" name="action" value="revoke_profile" />
+                      <button type="submit" class="btn-secondary px-2 py-1 text-xs">Unpublish profile</button>
+                    </form>
+                  )}
+                  {member.membership_status !== "suspended" && member.membership_status !== "removed" && (
+                    <form method="post" action="/api/admin/members/update">
+                      <input type="hidden" name="id" value={member.id} />
+                      <input type="hidden" name="action" value="suspend_membership" />
+                      <button type="submit" class="btn-secondary px-2 py-1 text-xs">Suspend</button>
+                    </form>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  {(!sorted || sorted.length === 0) && <p class="mt-6 text-neutral-500">No member records yet.</p>}
+</AdminLayout>

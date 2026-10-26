@@ -1,0 +1,27 @@
+---
+import { formatDate } from "../lib/utils";
+
+interface Props {
+  spotlight: {
+    title: string;
+    slug: string;
+    summary: string | null;
+    category: string;
+    published_at: string;
+    image_url?: string | null;
+    member?: { display_name: string; slug: string } | null;
+  };
+}
+const { spotlight } = Astro.props;
+---
+
+<a href={`/spotlights/${spotlight.slug}`} class="card flex flex-col gap-2 focus-visible:outline-none">
+  {spotlight.image_url && <img src={spotlight.image_url} alt="" class="mb-2 h-40 w-full rounded-lg object-cover" loading="lazy" />}
+  <span class="badge w-fit capitalize">{spotlight.category.replace("-", " ")}</span>
+  <p class="font-semibold text-neutral-900 dark:text-neutral-100">{spotlight.title}</p>
+  {spotlight.summary && <p class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-3">{spotlight.summary}</p>}
+  <div class="mt-1 flex items-center justify-between text-xs text-neutral-500">
+    {spotlight.member && <span>Featuring {spotlight.member.display_name}</span>}
+    <span>{formatDate(spotlight.published_at)}</span>
+  </div>
+</a>

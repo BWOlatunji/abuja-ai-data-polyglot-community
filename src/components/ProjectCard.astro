@@ -1,0 +1,27 @@
+---
+interface Props {
+  project: {
+    title: string;
+    slug: string;
+    summary: string | null;
+    technologies: string[];
+    category: string;
+  };
+}
+const { project } = Astro.props;
+---
+
+<a href={`/projects/${project.slug}`} class="card flex flex-col gap-2 focus-visible:outline-none">
+  <span class="badge w-fit capitalize">{project.category.replace("-", " ")}</span>
+  <p class="font-semibold text-neutral-900 dark:text-neutral-100">{project.title}</p>
+  {project.summary && <p class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-3">{project.summary}</p>}
+  {
+    project.technologies?.length > 0 && (
+      <div class="flex flex-wrap gap-1.5 pt-1">
+        {project.technologies.slice(0, 4).map((tech) => (
+          <span class="badge">{tech}</span>
+        ))}
+      </div>
+    )
+  }
+</a>

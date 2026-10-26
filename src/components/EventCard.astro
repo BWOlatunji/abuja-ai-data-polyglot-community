@@ -1,0 +1,29 @@
+---
+import { formatEventDate, formatEventTime } from "../lib/utils";
+
+interface Props {
+  event: {
+    title: string;
+    slug: string;
+    description: string;
+    start_at: string;
+    timezone: string;
+    venue_type: string;
+    event_type: string;
+    status: string;
+  };
+}
+const { event } = Astro.props;
+---
+
+<a href={`/events/${event.slug}`} class="card flex flex-col gap-2 focus-visible:outline-none">
+  <div class="flex items-center justify-between gap-2">
+    <span class="badge capitalize">{event.event_type.replace("_", " ")}</span>
+    <span class="text-xs font-medium uppercase text-neutral-500 capitalize">{event.venue_type}</span>
+  </div>
+  <p class="font-semibold text-neutral-900 dark:text-neutral-100">{event.title}</p>
+  <p class="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2">{event.description}</p>
+  <p class="mt-1 text-sm font-medium text-brand-700 dark:text-brand-300">
+    {formatEventDate(event.start_at, event.timezone)} · {formatEventTime(event.start_at, event.timezone)}
+  </p>
+</a>

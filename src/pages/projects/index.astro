@@ -1,0 +1,90 @@
+---
+export const prerender = false;
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Section from "../../components/Section.astro";
+import ProjectCard from "../../components/ProjectCard.astro";
+import EmptyState from "../../components/EmptyState.astro";
+import SampleDataNotice from "../../components/SampleDataNotice.astro";
+import { listPublishedProjects } from "../../lib/data/projects";
+
+const category = Astro.url.searchParams.get("category") ?? "";
+const { projects, isSample } = await listPublishedProjects(category || undefined);
+
+const success = Astro.url.searchParams.get("success");
+const errorParam = Astro.url.searchParams.get("error");
+const message = Astro.url.searchParams.get("message");
+---
+
+<BaseLayout title="Projects" description="Community and member-built data and AI projects.">
+  <Section title="Projects" description="Showcasing member and community-built projects across data, analytics, and AI.">
+    {isSample && <SampleDataNotice />}
+    {projects.length > 0 ? (
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {projects.map((project) => <ProjectCard project={project} />)}
+      </div>
+    ) : (
+      <EmptyState title="No projects published yet" description="Submit your project below to be considered for the showcase." />
+    )}
+  </Section>
+
+  <Section title="Submit a project" description="Share a project for editorial review. We'll reach out if we need more information before publishing.">
+    <div id="submit" class="max-w-2xl rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
+      {success && <p class="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Thanks! Your project has been submitted for review.</p>}
+      {errorParam === "validation" && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{message || "Please check the form and try again."}</p>}
+      {errorParam === "rate_limited" && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">Too many submissions recently. Please try again later.</p>}
+      {errorParam === "server_error" && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">Something went wrong. Please try again.</p>}
+      {errorParam === "not_configured" && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">Submissions are not available yet - the site's database connection has not been configured.</p>}
+
+      <form method="post" action="/api/project-submission" class="grid gap-4 sm:grid-cols-2">
+        <div class="hidden" aria-hidden="true">
+          <label for="website">Leave this field blank</label>
+          <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <div>
+          <label class="label-text" for="submitterName">Your name</label>
+          <input id="submitterName" name="submitterName" required class="input-field" />
+        </div>
+        <div>
+          <label class="label-text" for="submitterEmail">Your email</label>
+          <input id="submitterEmail" name="submitterEmail" type="email" required class="input-field" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="label-text" for="title">Project title</label>
+          <input id="title" name="title" required class="input-field" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="label-text" for="summary">Summary</label>
+          <input id="summary" name="summary" required class="input-field" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="label-text" for="description">Description</label>
+          <textarea id="description" name="description" rows="5" required class="input-field"></textarea>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="label-text" for="problemStatement">Problem being addressed (optional)</label>
+          <textarea id="problemStatement" name="problemStatement" rows="3" class="input-field"></textarea>
+        </div>
+        <div>
+          <label class="label-text" for="technologies">Technologies (comma separated)</label>
+          <input id="technologies" name="technologies" class="input-field" placeholder="Python, Power BI, SQL" />
+        </div>
+        <div>
+          <label class="label-text" for="category">Category (optional)</label>
+          <input id="category" name="category" class="input-field" placeholder="e.g. data-viz" />
+        </div>
+        <div>
+          <label class="label-text" for="repositoryUrl">Repository URL (optional)</label>
+          <input id="repositoryUrl" name="repositoryUrl" type="url" class="input-field" />
+        </div>
+        <div>
+          <label class="label-text" for="demoUrl">Demo URL (optional)</label>
+          <input id="demoUrl" name="demoUrl" type="url" class="input-field" />
+        </div>
+        <div class="sm:col-span-2">
+          <button type="submit" class="btn-primary">Submit project</button>
+        </div>
+      </form>
+    </div>
+  </Section>
+</BaseLayout>

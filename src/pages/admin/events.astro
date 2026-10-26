@@ -1,0 +1,151 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { formatDate } from "../../lib/utils";
+
+const supabase = Astro.locals.supabase;
+const editId = Astro.url.searchParams.get("edit");
+
+const { data: events, error } = await supabase
+  .from("events")
+  .select(
+    "id, title, slug, description, event_type, category, start_at, end_at, venue_type, venue_details, registration_url, speakers, featured_image_url, status, recording_url, published_at, created_at"
+  )
+  .order("start_at", { ascending: false });
+
+const editing = editId ? events?.find((e) => e.id === editId) ?? null : null;
+
+function toLocalInputValue(iso: string | null) {
+  if (!iso) return "";
+  // Render the WAT wall-clock time back into the datetime-local input.
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+    .format(new Date(iso))
+    .replace(", ", "T");
+}
+
+const success = Astro.url.searchParams.get("success");
+const errorParam = Astro.url.searchParams.get("error");
+---
+
+<AdminLayout title="Events">
+  {success && <p class="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Saved.</p>}
+  {errorParam && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">Could not save that event.</p>}
+  {error && <p class="mb-4 text-sm text-red-700">{error.message}</p>}
+
+  <div class="mb-10 rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+    <h2 class="mb-4 font-semibold">{editing ? "Edit event" : "New event"}</h2>
+    <p class="mb-4 text-xs text-neutral-500">Dates/times are entered and displayed in West Africa Time (WAT, UTC+1).</p>
+    <form method="post" action="/api/admin/events/upsert" class="grid gap-4 sm:grid-cols-2">
+      {editing && <input type="hidden" name="id" value={editing.id} />}
+      <div class="sm:col-span-2">
+        <label class="label-text" for="title">Title</label>
+        <input id="title" name="title" class="input-field" required value={editing?.title ?? ""} />
+      </div>
+      <div>
+        <label class="label-text" for="event_type">Event type</label>
+        <select id="event_type" name="event_type" class="input-field">
+          {["webinar", "workshop", "meetup", "conference", "office_hours", "other"].map((t) => (
+            <option value={t} selected={t === (editing?.event_type ?? "webinar")}>{t.replace("_", " ")}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label class="label-text" for="category">Category</label>
+        <input id="category" name="category" class="input-field" value={editing?.category ?? "general"} />
+      </div>
+      <div>
+        <label class="label-text" for="start_at">Start (WAT)</label>
+        <input id="start_at" name="start_at" type="datetime-local" class="input-field" required value={toLocalInputValue(editing?.start_at ?? null)} />
+      </div>
+      <div>
+        <label class="label-text" for="end_at">End (WAT, optional)</label>
+        <input id="end_at" name="end_at" type="datetime-local" class="input-field" value={toLocalInputValue(editing?.end_at ?? null)} />
+      </div>
+      <div>
+        <label class="label-text" for="venue_type">Venue type</label>
+        <select id="venue_type" name="venue_type" class="input-field">
+          {["online", "physical", "hybrid"].map((t) => (
+            <option value={t} selected={t === (editing?.venue_type ?? "online")}>{t}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label class="label-text" for="status">Status</label>
+        <select id="status" name="status" class="input-field">
+          {["scheduled", "completed", "cancelled", "postponed"].map((s) => (
+            <option value={s} selected={s === (editing?.status ?? "scheduled")}>{s}</option>
+          ))}
+        </select>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label-text" for="venue_details">Venue details</label>
+        <input id="venue_details" name="venue_details" class="input-field" value={editing?.venue_details ?? ""} placeholder="Online link, or physical address" />
+      </div>
+      <div>
+        <label class="label-text" for="registration_url">Registration URL</label>
+        <input id="registration_url" name="registration_url" class="input-field" value={editing?.registration_url ?? ""} />
+      </div>
+      <div>
+        <label class="label-text" for="recording_url">Recording URL (after the event)</label>
+        <input id="recording_url" name="recording_url" class="input-field" value={editing?.recording_url ?? ""} />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label-text" for="description">Description</label>
+        <textarea id="description" name="description" rows="6" class="input-field" required>{editing?.description ?? ""}</textarea>
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label-text" for="speakers_json">Speakers (JSON array of {"{"}"name","bio"{"}"})</label>
+        <textarea id="speakers_json" name="speakers_json" rows="3" class="input-field">{JSON.stringify(editing?.speakers ?? [], null, 2)}</textarea>
+      </div>
+      <div class="sm:col-span-2 flex items-center gap-2">
+        <input id="publish" name="publish" type="checkbox" checked={Boolean(editing?.published_at)} />
+        <label for="publish" class="text-sm">Published (visible on the public /events page)</label>
+      </div>
+      <div class="sm:col-span-2 flex gap-2">
+        <button type="submit" class="btn-primary">{editing ? "Save changes" : "Create event"}</button>
+        {editing && <a href="/admin/events" class="btn-secondary">Cancel</a>}
+      </div>
+    </form>
+  </div>
+
+  <div class="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
+    <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-800">
+      <thead class="bg-neutral-50 dark:bg-neutral-900">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold">Title</th>
+          <th class="px-4 py-3 text-left font-semibold">Start (WAT)</th>
+          <th class="px-4 py-3 text-left font-semibold">Status</th>
+          <th class="px-4 py-3 text-left font-semibold">Published</th>
+          <th class="px-4 py-3 text-left font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-neutral-100 dark:divide-neutral-800">
+        {
+          (events ?? []).map((e) => (
+            <tr>
+              <td class="px-4 py-3">{e.title}</td>
+              <td class="px-4 py-3 text-neutral-500">{formatDate(e.start_at)}</td>
+              <td class="px-4 py-3 capitalize">{e.status}</td>
+              <td class="px-4 py-3">{e.published_at ? "Yes" : "No"}</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  <a href={`/admin/events?edit=${e.id}`} class="btn-secondary px-2 py-1 text-xs">Edit</a>
+                  {e.published_at && <a href={`/events/${e.slug}`} class="btn-secondary px-2 py-1 text-xs">View</a>}
+                </div>
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  {(!events || events.length === 0) && <p class="mt-6 text-neutral-500">No events yet.</p>}
+</AdminLayout>

@@ -1,0 +1,54 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+
+const supabase = Astro.locals.supabase;
+
+const [members, pendingMembers, submissions, articles, events, projects, spotlights] = await Promise.all([
+  supabase.from("members").select("id", { count: "exact", head: true }).eq("membership_status", "active"),
+  supabase.from("members").select("id", { count: "exact", head: true }).eq("membership_status", "pending"),
+  supabase.from("submissions").select("id", { count: "exact", head: true }).eq("status", "pending"),
+  supabase.from("articles").select("id", { count: "exact", head: true }).eq("publication_status", "published"),
+  supabase.from("events").select("id", { count: "exact", head: true }).not("published_at", "is", null),
+  supabase.from("projects").select("id", { count: "exact", head: true }).eq("publication_status", "published"),
+  supabase.from("spotlights").select("id", { count: "exact", head: true }).eq("publication_status", "published"),
+]);
+
+const stats = [
+  { label: "Active members", value: members.count ?? 0 },
+  { label: "Pending registrations", value: pendingMembers.count ?? 0, highlight: (pendingMembers.count ?? 0) > 0 },
+  { label: "Submissions awaiting review", value: submissions.count ?? 0, highlight: (submissions.count ?? 0) > 0 },
+  { label: "Published articles", value: articles.count ?? 0 },
+  { label: "Published events", value: events.count ?? 0 },
+  { label: "Published projects", value: projects.count ?? 0 },
+  { label: "Published spotlights", value: spotlights.count ?? 0 },
+];
+---
+
+<AdminLayout title="Dashboard">
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {
+      stats.map((stat) => (
+        <div
+          class={`rounded-xl border p-5 ${
+            stat.highlight
+              ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950"
+              : "border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900"
+          }`}
+        >
+          <p class="text-2xl font-bold">{stat.value}</p>
+          <p class="text-sm text-neutral-600 dark:text-neutral-400">{stat.label}</p>
+        </div>
+      ))
+    }
+  </div>
+
+  <div class="mt-8 flex flex-wrap gap-3">
+    <a href="/admin/members" class="btn-secondary">Review members</a>
+    <a href="/admin/submissions" class="btn-secondary">Review submissions</a>
+    <a href="/admin/articles" class="btn-secondary">Manage articles</a>
+    <a href="/admin/events" class="btn-secondary">Manage events</a>
+    <a href="/admin/projects" class="btn-secondary">Manage projects</a>
+    <a href="/admin/spotlights" class="btn-secondary">Manage spotlights</a>
+  </div>
+</AdminLayout>

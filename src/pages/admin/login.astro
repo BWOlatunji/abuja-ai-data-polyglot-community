@@ -1,0 +1,53 @@
+---
+import "../../styles/global.css";
+
+export const prerender = false;
+
+const url = Astro.url;
+const error = url.searchParams.get("error");
+const next = url.searchParams.get("next") || "/admin";
+
+const errorMessages: Record<string, string> = {
+  missing: "Enter both email and password.",
+  invalid: "Incorrect email or password.",
+  not_admin: "That account does not have admin access.",
+  not_configured: "Supabase is not configured yet - set PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, and SUPABASE_SERVICE_ROLE_KEY to enable admin login.",
+};
+---
+
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin Login · Abuja AI &amp; Data Polyglot</title>
+  </head>
+  <body class="flex min-h-full items-center justify-center bg-neutral-100 px-4 font-sans dark:bg-neutral-950">
+    <div class="w-full max-w-sm rounded-xl border border-neutral-200 bg-white p-8 shadow-card dark:border-neutral-800 dark:bg-neutral-900">
+      <h1 class="font-display text-xl font-bold text-neutral-900 dark:text-neutral-100">Organiser login</h1>
+      <p class="mt-1 text-sm text-neutral-600 dark:text-neutral-400">Sign in to manage members, content, and events.</p>
+
+      {
+        error && (
+          <p class="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">
+            {errorMessages[error] ?? "Something went wrong. Please try again."}
+          </p>
+        )
+      }
+
+      <form method="post" action="/api/admin/login" class="mt-6 flex flex-col gap-4">
+        <input type="hidden" name="next" value={next} />
+        <div>
+          <label for="email" class="label-text">Email address</label>
+          <input id="email" name="email" type="email" required autocomplete="email" class="input-field" />
+        </div>
+        <div>
+          <label for="password" class="label-text">Password</label>
+          <input id="password" name="password" type="password" required autocomplete="current-password" class="input-field" />
+        </div>
+        <button type="submit" class="btn-primary w-full">Sign in</button>
+      </form>
+    </div>
+  </body>
+</html>

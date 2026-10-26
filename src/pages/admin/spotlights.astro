@@ -1,0 +1,97 @@
+---
+export const prerender = false;
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { formatDate } from "../../lib/utils";
+
+const supabase = Astro.locals.supabase;
+const editId = Astro.url.searchParams.get("edit");
+
+const { data: spotlights, error } = await supabase
+  .from("spotlights")
+  .select("id, title, slug, summary, content, category, image_url, member_id, publication_status, published_at, created_at")
+  .order("created_at", { ascending: false });
+
+const editing = editId ? spotlights?.find((s) => s.id === editId) ?? null : null;
+const success = Astro.url.searchParams.get("success");
+const errorParam = Astro.url.searchParams.get("error");
+---
+
+<AdminLayout title="Spotlights">
+  {success && <p class="mb-4 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">Saved.</p>}
+  {errorParam && <p class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">Could not save that spotlight.</p>}
+  {error && <p class="mb-4 text-sm text-red-700">{error.message}</p>}
+
+  <div class="mb-10 rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+    <h2 class="mb-4 font-semibold">{editing ? "Edit spotlight" : "New spotlight"}</h2>
+    <form method="post" action="/api/admin/spotlights/upsert" class="grid gap-4 sm:grid-cols-2">
+      {editing && <input type="hidden" name="id" value={editing.id} />}
+      <div class="sm:col-span-2">
+        <label class="label-text" for="title">Title</label>
+        <input id="title" name="title" class="input-field" required value={editing?.title ?? ""} />
+      </div>
+      <div>
+        <label class="label-text" for="category">Category</label>
+        <input id="category" name="category" class="input-field" value={editing?.category ?? "general"} />
+      </div>
+      <div>
+        <label class="label-text" for="member_id">Member ID (optional)</label>
+        <input id="member_id" name="member_id" class="input-field" value={editing?.member_id ?? ""} placeholder="UUID of a member, if applicable" />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label-text" for="summary">Summary</label>
+        <input id="summary" name="summary" class="input-field" value={editing?.summary ?? ""} />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label-text" for="image_url">Image URL (optional)</label>
+        <input id="image_url" name="image_url" class="input-field" value={editing?.image_url ?? ""} />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="label-text" for="content">Content (Markdown)</label>
+        <textarea id="content" name="content" rows="8" class="input-field" required>{editing?.content ?? ""}</textarea>
+      </div>
+      <div>
+        <label class="label-text" for="publication_status">Status</label>
+        <select id="publication_status" name="publication_status" class="input-field">
+          {["draft", "pending_review", "published", "archived"].map((s) => (
+            <option value={s} selected={s === (editing?.publication_status ?? "draft")}>{s}</option>
+          ))}
+        </select>
+      </div>
+      <div class="sm:col-span-2 flex gap-2">
+        <button type="submit" class="btn-primary">{editing ? "Save changes" : "Create spotlight"}</button>
+        {editing && <a href="/admin/spotlights" class="btn-secondary">Cancel</a>}
+      </div>
+    </form>
+  </div>
+
+  <div class="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
+    <table class="min-w-full divide-y divide-neutral-200 text-sm dark:divide-neutral-800">
+      <thead class="bg-neutral-50 dark:bg-neutral-900">
+        <tr>
+          <th class="px-4 py-3 text-left font-semibold">Title</th>
+          <th class="px-4 py-3 text-left font-semibold">Status</th>
+          <th class="px-4 py-3 text-left font-semibold">Created</th>
+          <th class="px-4 py-3 text-left font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-neutral-100 dark:divide-neutral-800">
+        {
+          (spotlights ?? []).map((s) => (
+            <tr>
+              <td class="px-4 py-3">{s.title}</td>
+              <td class="px-4 py-3 capitalize">{s.publication_status.replace("_", " ")}</td>
+              <td class="px-4 py-3 text-neutral-500">{formatDate(s.created_at)}</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-2">
+                  <a href={`/admin/spotlights?edit=${s.id}`} class="btn-secondary px-2 py-1 text-xs">Edit</a>
+                  {s.publication_status === "published" && <a href={`/spotlights/${s.slug}`} class="btn-secondary px-2 py-1 text-xs">View</a>}
+                </div>
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+  {(!spotlights || spotlights.length === 0) && <p class="mt-6 text-neutral-500">No spotlights yet.</p>}
+</AdminLayout>

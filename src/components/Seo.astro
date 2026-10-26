@@ -1,0 +1,48 @@
+---
+import { siteConfig } from "../lib/config";
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  canonicalPath?: string;
+  type?: "website" | "article" | "profile";
+  publishedTime?: string;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = siteConfig.description,
+  image,
+  canonicalPath = Astro.url.pathname,
+  type = "website",
+  publishedTime,
+  noindex = false,
+} = Astro.props;
+
+const fullTitle = title === siteConfig.name ? title : `${title} | ${siteConfig.shortName}`;
+const canonicalUrl = new URL(canonicalPath, siteConfig.url).toString();
+// NOTE: og-default.svg is a placeholder. Replace with a branded 1200x630
+// PNG/JPG before launch - some platforms (notably WhatsApp) render SVG
+// Open Graph images unreliably.
+const ogImage = image ? new URL(image, siteConfig.url).toString() : new URL("/og-default.svg", siteConfig.url).toString();
+---
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonicalUrl} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
+
+<meta property="og:site_name" content={siteConfig.name} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:type" content={type} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:image" content={ogImage} />
+{publishedTime && <meta property="article:published_time" content={publishedTime} />}
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
